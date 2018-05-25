@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -e
+set -o nounset
+set -o pipefail
+
+url='{{ icinga2_api_test_url }}'
+cacert='{{ icinga2_api_test_cacert }}'
+pubkey='{{ icinga2_api_test_pubkey }}'
+privkey='{{ icinga2_api_test_privkey }}'
+msmtpAccount='{{ icinga2_api_test_msmtp_account }}'
+msmtpFrom='{{ icinga2_api_test_msmtp_from }}'
+recipients=({{ icinga2_api_test_recipients | join(' ') }})
+failedFile='{{ icinga2_api_test_failed_file }}'
+
+fail() {
+	# Ensure we don't annoy recipients
+	if [ -f "${failedFile}" ]; then
+		exit 1
+	fi
+	touch "${failedFile}"
+	# Send out mails
+	for rcpt in "${recipients[@]}"; do
+		msmtp -t -a "${msmtpAccount}" <<END
+From: ${msmtpFrom}
+To: ${rcpt}
+Subject: Icinga 2 is in a critical state
+
+It seems Icinga 2 is unreachable.
+The error message is: ${1}
+END
+	done
+	# Good bye
+	echo "${1}"
+	exit 1
+}
+
+# Extra file descriptor for curl's stderr
+pipe="$(mktemp -u)"
+mkfifo "${pipe}"
+exec 3<>"${pipe}"
+rm "${pipe}"
+
+# Run curl
+set +e
+stdout=$(curl \
+	--silent \
+	--show-error \
+  {{ icinga2_api_test_curl_flags }} \
+	--header 'Accept: application/json' \
+	--cacert "${cacert}" \
+	--cert "${pubkey}" \
+	--key "${privkey}" \
+	"https://${url}/v1/status" 2>&3)
+
+# Process results...
+returncode="${?}"
+set -e
+# ...and stderr
+echo >&3
+read -r stderr <&3
+exec 3<&-
+
+# Did curl fail?
+if [ "${returncode}" != 0 ]; then
+	fail "${stderr}"
+fi
+
+# Did our request fail?
+if [ "$(echo "${stdout}" | jq .error)" != null ]; then
+	fail "$(echo "${stdout}" | jq -r .status)"
+fi
+
+# Read the database connection
+dbstate="$(echo "${stdout}" | \
+	jq '.results[] |
+		select(.name=="IdoPgsqlConnection") |
+		.status.idopgsqlconnection."ido-pgsql".connected')"
+if [ "${dbstate}" != true ]; then
+	fail "Database is not available"
+fi
+
+# We did great!
+rm -f "${failedFile}"
