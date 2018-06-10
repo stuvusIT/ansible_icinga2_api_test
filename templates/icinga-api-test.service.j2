@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Test Icinga 2 remote API
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/icinga-api-test
+CapabilityBoundingSet=
+NoNewPrivileges=true
+ProtectSystem=true

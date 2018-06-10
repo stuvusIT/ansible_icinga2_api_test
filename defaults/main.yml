@@ -1,0 +1,7 @@
+---
+icinga2_api_test_calendar: minutely
+icinga2_api_test_url: 127.0.0.1:5665
+icinga2_api_test_cacert: /var/lib/icinga2/certs/ca.crt
+icinga2_api_test_msmtp_account: default
+icinga2_api_test_failed_file: /tmp/icinga.failed
+icinga2_api_test_curl_flags: ""

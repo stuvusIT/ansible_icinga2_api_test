@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart timer
+  service:
+    name: icinga-api-test.timer
+    state: restarted

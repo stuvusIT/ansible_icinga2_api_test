@@ -1,0 +1,39 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: true
+  changed_when: false
+
+- name: Install required packages
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - curl
+    - jq
+
+- name: Install systemd units
+  template:
+    src: icinga-api-test.{{ item }}.j2
+    dest: /etc/systemd/system/icinga-api-test.{{ item }}
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Reload systemd
+    - Restart timer
+  with_items:
+    - service
+    - timer
+
+- name: Install script
+  template:
+    src: icinga-api-test
+    dest: /usr/local/bin/icinga-api-test
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Enable timer
+  service:
+    name: icinga-api-test.timer
+    enabled: true

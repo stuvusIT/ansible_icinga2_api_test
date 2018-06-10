@@ -1,0 +1,9 @@
+[Unit]
+Description=Icinga remote API test timer
+
+[Timer]
+OnCalendar={{ icinga2_api_test_calendar }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
