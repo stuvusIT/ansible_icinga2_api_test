@@ -11,7 +11,7 @@ The API user only needs the `status/query` permission.
 
 ## Requirements
 
-Ubuntu with a configured [msmstp](https://github.com/stuvusIT/msmtp) installation
+Debian or Ubuntu with a configured [msmstp](https://github.com/stuvusIT/msmtp) installation
 
 ## Role Variables
 
